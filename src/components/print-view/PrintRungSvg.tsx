@@ -24,11 +24,16 @@ const RAIL = 6;    // power rail thickness
 const FS = 9;      // font size
 
 // ============================================================================
-// Internal Slot Type
+// Internal Types
 // ============================================================================
 
+interface BusLine {
+  x1: number; y1: number;
+  x2: number; y2: number;
+}
+
 interface Slot {
-  kind: 'no' | 'nc' | 'p-contact' | 'n-contact' | 'comparator' | 'coil' | 'set-coil' | 'reset-coil' | 'timer' | 'counter' | 'wire';
+  kind: 'no' | 'nc' | 'p-contact' | 'n-contact' | 'comparator' | 'coil' | 'set-coil' | 'reset-coil' | 'timer' | 'counter';
   label: string;
   col: number;
   row: number;
@@ -43,19 +48,48 @@ function walkNet(
   col: { v: number },
   row: number,
   slots: Slot[],
+  busLines: BusLine[],
 ): void {
   switch (net.type) {
     case 'series':
-      net.elements.forEach((e) => walkNet(e, col, row, slots));
+      net.elements.forEach((e) => walkNet(e, col, row, slots, busLines));
       break;
     case 'parallel': {
       const startCol = col.v;
+      const branchEndCols: number[] = [];
       let maxUsed = 0;
+
       net.branches.forEach((b, i) => {
         const branchCol = { v: startCol };
-        walkNet(b, branchCol, row + i, slots);
+        walkNet(b, branchCol, row + i, slots, busLines);
+        branchEndCols.push(branchCol.v);
         maxUsed = Math.max(maxUsed, branchCol.v - startCol);
       });
+
+      if (net.branches.length > 1) {
+        // Vertical bus at left (entry)
+        const leftX = RAIL + startCol * CW + 12; // left edge of slot box area
+        const topCy = row * (CH + ROW_GAP) + CH / 2;
+        const botCy = (row + net.branches.length - 1) * (CH + ROW_GAP) + CH / 2;
+        busLines.push({ x1: leftX, y1: topCy, x2: leftX, y2: botCy });
+
+        // Vertical bus at right (merge)
+        const rightX = RAIL + (startCol + maxUsed) * CW + CW - 12; // right edge of slot box area
+        busLines.push({ x1: rightX, y1: topCy, x2: rightX, y2: botCy });
+
+        // Horizontal filler for short branches
+        branchEndCols.forEach((endCol, i) => {
+          if (endCol < startCol + maxUsed) {
+            const fillerY = (row + i) * (CH + ROW_GAP) + CH / 2;
+            const fillerX1 = RAIL + endCol * CW + CW - 12; // after last slot's right wire
+            const fillerX2 = rightX;
+            if (fillerX2 > fillerX1) {
+              busLines.push({ x1: fillerX1, y1: fillerY, x2: fillerX2, y2: fillerY });
+            }
+          }
+        });
+      }
+
       col.v = startCol + maxUsed;
       break;
     }
@@ -67,9 +101,14 @@ function walkNet(
       slots.push({ kind, label: net.variable, col: col.v++, row });
       break;
     }
-    case 'comparator':
-      slots.push({ kind: 'comparator', label: `${net.leftOperand} ${net.operator} ${net.rightOperand}`, col: col.v++, row });
+    case 'comparator': {
+      const opSymbol: Record<string, string> = {
+        EQ: '=', NE: '≠', GT: '>', GE: '≥', LT: '<', LE: '≤',
+      };
+      const sym = opSymbol[net.operator] ?? net.operator;
+      slots.push({ kind: 'comparator', label: `${net.leftOperand} ${sym} ${net.rightOperand}`, col: col.v++, row });
       break;
+    }
     case 'true':
       // No visual element — wire only
       break;
@@ -80,7 +119,7 @@ function walkNet(
   }
 }
 
-function outputToSlots(out: RungOutput, col: number, row: number): Slot[] {
+function outputToSlots(out: RungOutput, col: number, row: number, busLines: BusLine[]): Slot[] {
   switch (out.type) {
     case 'coil': {
       const kind: Slot['kind'] =
@@ -89,11 +128,20 @@ function outputToSlots(out: RungOutput, col: number, row: number): Slot[] {
       return [{ kind, label: out.variable, col, row }];
     }
     case 'timer':
-      return [{ kind: 'timer', label: `${out.timerType}:${out.instanceName}`, col, row }];
+      return [{ kind: 'timer', label: `${out.timerType}:${out.instanceName} ${out.presetTime}`, col, row }];
     case 'counter':
-      return [{ kind: 'counter', label: `${out.counterType}:${out.instanceName}`, col, row }];
-    case 'multi':
-      return out.outputs.flatMap((o, i) => outputToSlots(o, col, row + i));
+      return [{ kind: 'counter', label: `${out.counterType}:${out.instanceName} PV=${out.presetValue}`, col, row }];
+    case 'multi': {
+      const allSlots = out.outputs.flatMap((o, i) => outputToSlots(o, col, row + i, busLines));
+      if (out.outputs.length > 1) {
+        // Vertical connector at output column entry
+        const busX = RAIL + col * CW + 12;
+        const topCy = row * (CH + ROW_GAP) + CH / 2;
+        const botCy = (row + out.outputs.length - 1) * (CH + ROW_GAP) + CH / 2;
+        busLines.push({ x1: busX, y1: topCy, x2: busX, y2: botCy });
+      }
+      return allSlots;
+    }
     default: {
       const _exhaustive: never = out;
       void _exhaustive;
@@ -171,11 +219,12 @@ function SlotElement({ s }: { s: Slot }) {
 
 export function PrintRungSvg({ rung }: { rung: LadderRungIR }) {
   const slots: Slot[] = [];
+  const busLines: BusLine[] = [];
   const col = { v: 0 };
 
-  walkNet(rung.inputNetwork, col, 0, slots);
+  walkNet(rung.inputNetwork, col, 0, slots, busLines);
 
-  const outputSlots = outputToSlots(rung.output, col.v, 0);
+  const outputSlots = outputToSlots(rung.output, col.v, 0, busLines);
   slots.push(...outputSlots);
 
   const totalCols = col.v + 1;
@@ -197,10 +246,18 @@ export function PrintRungSvg({ rung }: { rung: LadderRungIR }) {
       {/* Wire from left rail to first element */}
       <line x1={RAIL} y1={cy0} x2={RAIL + 16} y2={cy0} stroke="#000" strokeWidth={1.5} />
 
-      {/* Rung elements */}
-      {slots.map((s, i) => (
-        <SlotElement key={i} s={s} />
+      {/* Bus lines (parallel branch connectors) */}
+      {busLines.map((l, i) => (
+        <line key={`bus-${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#000" strokeWidth={1.5} />
       ))}
+
+      {/* Rung elements */}
+      {slots.map((s) => (
+        <SlotElement key={`${s.col}-${s.row}-${s.kind}`} s={s} />
+      ))}
+
+      {/* Wire from last element to right rail */}
+      <line x1={W - RAIL - 16} y1={cy0} x2={W - RAIL} y2={cy0} stroke="#000" strokeWidth={1.5} />
 
       {/* Right power rail */}
       <rect x={W - RAIL} y={0} width={RAIL} height={H} fill="#000" />

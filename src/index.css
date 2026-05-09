@@ -159,7 +159,7 @@
 @media print {
   /* Hide editor chrome */
   header, nav, aside,
-  .toolbar, .sidebar, .file-tabs,
+  .toolbar, .file-tabs,
   .open-menu, .help-menu,
   .react-flow__controls, .react-flow__minimap, .react-flow__panel,
   [class*="toolbar"], [class*="panel"], [class*="simulation"],

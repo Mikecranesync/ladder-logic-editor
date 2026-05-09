@@ -57,7 +57,7 @@ export function PrintView() {
               <strong>CCW Steps:</strong>
               <ol>
                 {rungGuide.steps.map((step, si) => (
-                  <li key={si}>{step.action}</li>
+                  <li key={`${rungGuide.rungIndex}-${si}`}>{step.action}</li>
                 ))}
               </ol>
             </div>

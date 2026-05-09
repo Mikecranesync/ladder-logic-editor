@@ -1,10 +1,26 @@
+/**
+ * CCW Guide Generator
+ *
+ * Converts a LadderIR into a sequence of step-by-step instructions for
+ * manually entering the equivalent program in Connected Components Workbench
+ * (CCW). Each rung becomes a CcwRungGuide whose steps describe which
+ * instructions to place and which tags to bind.
+ */
+
 // src/services/ccw-guide-generator.ts
 import type {
   LadderIR,
   LadderRungIR,
   ContactNetwork,
   RungOutput,
+  ContactType,
+  ComparatorOp,
+  CoilOutput,
 } from '../transformer/ladder-ir/ladder-ir-types';
+
+// ============================================================================
+// Public Types
+// ============================================================================
 
 export interface CcwStep {
   action: string;
@@ -16,14 +32,18 @@ export interface CcwRungGuide {
   steps: CcwStep[];
 }
 
-const CONTACT_LABELS: Record<string, string> = {
+// ============================================================================
+// Lookup Tables
+// ============================================================================
+
+const CONTACT_LABELS: Record<ContactType, string> = {
   NO: 'Direct Contact (XIC)',
   NC: 'Reverse Contact (XIO)',
   P: 'Positive Edge Contact',
   N: 'Negative Edge Contact',
 };
 
-const OP_LABELS: Record<string, string> = {
+const OP_LABELS: Record<ComparatorOp, string> = {
   EQ: 'EQU',
   NE: 'NEQ',
   GT: 'GRT',
@@ -32,11 +52,15 @@ const OP_LABELS: Record<string, string> = {
   LE: 'LEQ',
 };
 
-const COIL_LABELS: Record<string, string> = {
+const COIL_LABELS: Record<CoilOutput['coilType'], string> = {
   standard: 'Direct Coil (OTE)',
   set: 'Set Coil (OTL)',
   reset: 'Reset Coil (OTU)',
 };
+
+// ============================================================================
+// Network Walker
+// ============================================================================
 
 function walkNetwork(net: ContactNetwork, steps: CcwStep[]): void {
   switch (net.type) {
@@ -53,12 +77,12 @@ function walkNetwork(net: ContactNetwork, steps: CcwStep[]): void {
       break;
     case 'contact':
       steps.push({
-        action: `Add ${CONTACT_LABELS[net.contactType] ?? net.contactType} → bind to: ${net.variable}`,
+        action: `Add ${CONTACT_LABELS[net.contactType]} → bind to: ${net.variable}`,
       });
       break;
     case 'comparator':
       steps.push({
-        action: `Add ${OP_LABELS[net.operator] ?? net.operator} Instruction → Left: ${net.leftOperand}, Right: ${net.rightOperand}`,
+        action: `Add ${OP_LABELS[net.operator]} Instruction → Left: ${net.leftOperand}, Right: ${net.rightOperand}`,
       });
       break;
     case 'true':
@@ -66,17 +90,27 @@ function walkNetwork(net: ContactNetwork, steps: CcwStep[]): void {
         action: '(No contact needed — leave rung condition empty in CCW for unconditional execution)',
       });
       break;
+    default: {
+      const _exhaustive: never = net;
+      void _exhaustive;
+    }
   }
 }
+
+// ============================================================================
+// Output Walker
+// ============================================================================
 
 function walkOutput(output: RungOutput, steps: CcwStep[]): void {
   switch (output.type) {
     case 'coil':
       steps.push({
-        action: `Add ${COIL_LABELS[output.coilType] ?? output.coilType} → bind to: ${output.variable}`,
+        action: `Add ${COIL_LABELS[output.coilType]} → bind to: ${output.variable}`,
       });
       break;
     case 'timer':
+      // Note: TimerOutput.inputNetwork is NOT walked here because rung.inputNetwork
+      // was already walked at the rung level in generateCcwGuide.
       steps.push({
         action: `Add ${output.timerType} Function Block → instance name: ${output.instanceName}`,
       });
@@ -93,9 +127,24 @@ function walkOutput(output: RungOutput, steps: CcwStep[]): void {
     case 'multi':
       output.outputs.forEach((o) => walkOutput(o, steps));
       break;
+    default: {
+      const _exhaustive: never = output;
+      void _exhaustive;
+    }
   }
 }
 
+// ============================================================================
+// Public API
+// ============================================================================
+
+/**
+ * Generate a CCW entry guide from a LadderIR.
+ *
+ * @param ir - The compiled Ladder IR for a program.
+ * @returns An ordered array of per-rung guides, each containing the CCW steps
+ *          needed to reproduce that rung by hand.
+ */
 export function generateCcwGuide(ir: LadderIR): CcwRungGuide[] {
   return ir.rungs.map((rung: LadderRungIR) => {
     const steps: CcwStep[] = [];

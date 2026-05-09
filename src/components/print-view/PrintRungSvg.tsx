@@ -73,8 +73,8 @@ function walkNet(
         const botCy = (row + net.branches.length - 1) * (CH + ROW_GAP) + CH / 2;
         busLines.push({ x1: leftX, y1: topCy, x2: leftX, y2: botCy });
 
-        // Vertical bus at right (merge)
-        const rightX = RAIL + (startCol + maxUsed) * CW + CW - 12; // right edge of slot box area
+        // Vertical bus at right (merge) — right edge of the last used column's box
+        const rightX = RAIL + (startCol + maxUsed) * CW - 12;
         busLines.push({ x1: rightX, y1: topCy, x2: rightX, y2: botCy });
 
         // Horizontal filler for short branches

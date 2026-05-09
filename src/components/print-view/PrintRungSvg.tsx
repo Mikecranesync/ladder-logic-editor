@@ -68,7 +68,7 @@ function walkNet(
       break;
     }
     case 'comparator':
-      slots.push({ kind: 'comparator', label: `${net.operator}`, col: col.v++, row });
+      slots.push({ kind: 'comparator', label: `${net.leftOperand} ${net.operator} ${net.rightOperand}`, col: col.v++, row });
       break;
     case 'true':
       // No visual element — wire only
@@ -183,7 +183,7 @@ export function PrintRungSvg({ rung }: { rung: LadderRungIR }) {
 
   const W = RAIL * 2 + totalCols * CW + 16;
   const H = (maxRow + 1) * (CH + ROW_GAP) + ROW_GAP;
-  const cy0 = CH / 2 + ROW_GAP; // center-Y of row 0
+  const cy0 = CH / 2; // center-Y of row 0
 
   return (
     <svg

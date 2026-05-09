@@ -24,7 +24,13 @@ export function PrintView() {
     return result.intermediates?.ir ?? null;
   }, [content]);
 
-  if (!ir) return null;
+  if (!ir) return (
+    <div className="print-view">
+      <p style={{ fontFamily: 'Arial', color: 'red', padding: '0.5in 0.75in' }}>
+        Cannot export PDF: the active program has errors or is empty. Fix all errors before exporting.
+      </p>
+    </div>
+  );
 
   const guide = generateCcwGuide(ir);
 

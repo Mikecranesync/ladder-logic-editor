@@ -187,6 +187,27 @@ function SlotElement({ s }: { s: Slot }) {
   const boxW = CW - 24;
   const boxH = CH - 12;
 
+  // Comparators: split "left OP right" across two lines so operands aren't truncated
+  if (s.kind === 'comparator') {
+    const OP_SYMS = ['=', '≠', '>', '≥', '<', '≤'];
+    const parts = s.label.split(' ');
+    const opIdx = parts.findIndex((p) => OP_SYMS.includes(p));
+    const line1 = opIdx >= 0 ? parts.slice(0, opIdx + 1).join(' ') : s.label;
+    const line2 = opIdx >= 0 ? parts.slice(opIdx + 1).join(' ') : '';
+    return (
+      <g>
+        <title>{s.label}</title>
+        <line x1={x} y1={cy} x2={boxX} y2={cy} stroke="#000" strokeWidth={1.5} />
+        <rect x={boxX} y={boxY} width={boxW} height={boxH} fill="#fff" stroke="#000" strokeWidth={1.5} />
+        <text textAnchor="middle" fontFamily="monospace" fontSize={FS - 1}>
+          <tspan x={cx} y={cy - 4}>{truncate(line1, 15)}</tspan>
+          {line2 && <tspan x={cx} dy="1.2em">{truncate(line2, 15)}</tspan>}
+        </text>
+        <line x1={boxX + boxW} y1={cy} x2={x + CW} y2={cy} stroke="#000" strokeWidth={1.5} />
+      </g>
+    );
+  }
+
   return (
     <g>
       <line x1={x} y1={cy} x2={boxX} y2={cy} stroke="#000" strokeWidth={1.5} />

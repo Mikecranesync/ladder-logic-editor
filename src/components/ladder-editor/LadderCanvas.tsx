@@ -13,9 +13,20 @@ import ReactFlow, {
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   BackgroundVariant,
   type OnSelectionChangeParams,
 } from 'reactflow';
+
+function FitViewOnChange({ nodeCount }: { nodeCount: number }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    if (nodeCount > 0) {
+      setTimeout(() => fitView({ duration: 300, padding: 0.12 }), 50);
+    }
+  }, [nodeCount, fitView]);
+  return null;
+}
 import type { Node, Connection } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -186,6 +197,7 @@ export function LadderCanvas({
             size={1}
             color={themeColors.grid}
           />
+          <FitViewOnChange nodeCount={nodes.length} />
           {!isMobile && <Controls />}
           {!isMobile && (
             <MiniMap

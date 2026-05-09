@@ -34,6 +34,7 @@ import { transformSTToLadder, type TransformResult } from '../../transformer';
 import type { STAST } from '../../transformer/ast';
 import type { LadderNode, LadderEdge } from '../../models/ladder-elements';
 
+import { PrintView } from '../print-view/PrintView';
 import './MainLayout.css';
 
 export function MainLayout() {
@@ -397,6 +398,9 @@ export function MainLayout() {
           <HelpMenu />
         </div>
       </div>
+
+      {/* PDF Export print view — hidden on screen, shown on print */}
+      <PrintView />
     </div>
   );
 }

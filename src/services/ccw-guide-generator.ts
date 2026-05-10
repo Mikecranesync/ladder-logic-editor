@@ -37,10 +37,10 @@ export interface CcwRungGuide {
 // ============================================================================
 
 const CONTACT_LABELS: Record<ContactType, string> = {
-  NO: 'Direct Contact (XIC)',
-  NC: 'Reverse Contact (XIO)',
-  P: 'Positive Edge Contact',
-  N: 'Negative Edge Contact',
+  NO: 'Examine If Closed (XIC)',
+  NC: 'Examine If Open (XIO)',
+  P: 'Positive Transition (XIC)',
+  N: 'Negative Transition (XIC)',
 };
 
 const OP_LABELS: Record<ComparatorOp, string> = {
@@ -53,9 +53,9 @@ const OP_LABELS: Record<ComparatorOp, string> = {
 };
 
 const COIL_LABELS: Record<CoilOutput['coilType'], string> = {
-  standard: 'Direct Coil (OTE)',
-  set: 'Set Coil (OTL)',
-  reset: 'Reset Coil (OTU)',
+  standard: 'Output Energize (OTE)',
+  set: 'Output Latch (OTL)',
+  reset: 'Output Unlatch (OTU)',
 };
 
 // ============================================================================

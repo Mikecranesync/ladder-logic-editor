@@ -122,13 +122,13 @@ export interface VariableDeclaration {
   comment?: string;
   address?: string;          // IEC hardware address (%IX0.0, %QX0.0)
 
-  // v4: Physical wiring and mapping metadata
+  // Physical wiring and mapping metadata
   alias?: string;            // Human-readable label — "E-stop NC Contact", "VFD Run Command"
   modbusAddress?: string;    // Coil/register from Modbus config — "COIL:3", "HR:1"
   retain?: boolean;          // TRUE if variable survives power cycle
   terminalLabel?: string;    // Physical terminal ID on panel — "TB1-3", "VFD-FWD"
   sourceDevice?: string;     // Device that drives/reads this — "GS10 VFD", "E-stop", "Ignition"
-  direction?: "IN" | "OUT"; // Wire direction for wiring diagram (derived from scope)
+  direction?: 'IN' | 'OUT'; // Wire direction for wiring diagram (derived from scope)
 }
 
 // Wiring manifest — output of Phase 1 Ralph Loop research

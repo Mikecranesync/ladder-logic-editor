@@ -18,6 +18,7 @@ import { TutorialLightbulb } from '../onboarding';
 import { HelpMenu } from '../help-menu';
 import {
   useEditorStore,
+  useProjectStore,
   useSimulationStore,
   useUIStore,
   scheduleEditorAutoSave,
@@ -72,6 +73,26 @@ export function MainLayout() {
   const stepSimulation = useSimulationStore((state) => state.step);
   const updateTimer = useSimulationStore((state) => state.updateTimer);
   const timers = useSimulationStore((state) => state.timers);
+
+  // Manifest import
+  const loadManifest = useProjectStore((state) => state.loadManifest);
+  const manifestInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleManifestFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        loadManifest(parsed);
+      } catch {
+        console.warn('Failed to parse manifest JSON');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, [loadManifest]);
 
   // Ref to track animation frame
   const animationFrameRef = useRef<number | null>(null);
@@ -276,6 +297,26 @@ export function MainLayout() {
           >
             <span className="toolbar-icon">💾</span>
             <span className="toolbar-label">Save{activeFile?.isDirty ? '*' : ''}</span>
+          </button>
+        </div>
+
+        <div className="toolbar-separator" />
+
+        <div className="toolbar-group">
+          <input
+            ref={manifestInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleManifestFile}
+          />
+          <button
+            className="toolbar-btn"
+            title="Load variable manifest JSON to add aliases and Modbus addresses"
+            onClick={() => manifestInputRef.current?.click()}
+          >
+            <span className="toolbar-icon">📋</span>
+            <span className="toolbar-label">Manifest</span>
           </button>
         </div>
 

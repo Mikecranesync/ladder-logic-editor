@@ -24,6 +24,7 @@ import {
   scheduleEditorAutoSave,
 } from '../../store';
 import { downloadSTFile } from '../../services/file-service';
+import { useLiveBridge } from '../../hooks/useLiveBridge';
 import {
   runScanCycle,
   initializeVariables,
@@ -76,6 +77,9 @@ export function MainLayout() {
   const stepSimulation = useSimulationStore((state) => state.step);
   const updateTimer = useSimulationStore((state) => state.updateTimer);
   const timers = useSimulationStore((state) => state.timers);
+
+  // Live bridge
+  const { liveStatus, liveError, toggleLive, stopLive } = useLiveBridge();
 
   // Manifest import
   const loadManifest = useProjectStore((state) => state.loadManifest);
@@ -192,7 +196,8 @@ export function MainLayout() {
     stopSimulation();
     resetSimulation();
     useSimulationStore.getState().setPowerFlow(new Set(), new Set());
-  }, [stopSimulation, resetSimulation]);
+    stopLive();
+  }, [stopSimulation, resetSimulation, stopLive]);
 
   // Auto-save when files change
   useEffect(() => {
@@ -372,6 +377,24 @@ export function MainLayout() {
           >
             <span className="toolbar-icon">⏹️</span>
             <span className="toolbar-label">Stop</span>
+          </button>
+        </div>
+
+        <div className="toolbar-separator" />
+
+        {/* Live PLC bridge button */}
+        <div className="toolbar-group">
+          <button
+            className={`toolbar-btn ${liveStatus === 'live' ? 'active' : ''} ${liveStatus === 'error' ? 'error' : ''}`}
+            title={liveStatus === 'error' ? `Live error: ${liveError}` : liveStatus === 'live' ? 'Live — click to disconnect' : liveStatus === 'connecting' ? 'Connecting to PLC…' : 'Connect to live PLC (requires manifest with Modbus addresses)'}
+            onClick={toggleLive}
+          >
+            <span className="toolbar-icon">
+              {liveStatus === 'live' ? '🔴' : liveStatus === 'connecting' ? '🟡' : liveStatus === 'error' ? '⚠️' : '📡'}
+            </span>
+            <span className="toolbar-label">
+              {liveStatus === 'live' ? 'Live ●' : liveStatus === 'connecting' ? 'Connecting…' : liveStatus === 'error' ? 'Error' : 'Live'}
+            </span>
           </button>
         </div>
 

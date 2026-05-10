@@ -9,7 +9,7 @@ import { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { ContactNodeData } from '../../../models/ladder-elements';
-import { useProjectStore } from '../../../store';
+import { useProjectStore, useSimulationStore } from '../../../store';
 
 import './LadderNodes.css';
 
@@ -23,6 +23,8 @@ export const ContactNode = memo(function ContactNode({
     if (!variable) return undefined;
     return state.manifestMetadata[variable]?.alias;
   });
+
+  const isPowered = useSimulationStore((state) => state.poweredNodeIds.has(data.id));
 
   // Determine symbol based on contact type
   const getSymbol = () => {
@@ -42,7 +44,7 @@ export const ContactNode = memo(function ContactNode({
     <div
       className={`ladder-node contact-node ${contactType.toLowerCase()} ${
         selected ? 'selected' : ''
-      }`}
+      } ${isPowered ? 'powered' : ''}`}
     >
       {/* Input handle (left side - receives power) */}
       <Handle

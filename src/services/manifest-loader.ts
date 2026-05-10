@@ -34,6 +34,6 @@ export async function loadManifest(url: string): Promise<VariableManifest> {
 // Summarize gaps for display in the PDF Gaps section.
 export function formatGaps(manifest: VariableManifest): string[] {
   return manifest.gaps.map(
-    (g) => 
+    (g) => `${g.variableName}: missing ${g.missingFields.join(', ')}${g.note ? ` — ${g.note}` : ''}`
   );
 }

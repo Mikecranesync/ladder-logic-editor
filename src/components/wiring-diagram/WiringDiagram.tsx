@@ -77,7 +77,7 @@ export function WiringDiagram({ variables, width = 800 }: WiringDiagramProps) {
 
   return (
     <svg
-      viewBox={}
+      viewBox={`0 0 ${totalWidth} ${totalHeight}`}
       width={width}
       height={height}
       style={{ border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff" }}
@@ -130,13 +130,13 @@ export function WiringDiagram({ variables, width = 800 }: WiringDiagramProps) {
 
             {/* Wire: device → terminal block */}
             <polyline
-              points={}
+              points={`${wireFromX},${wireFromY} ${wireToX},${wireToY}`}
               fill="none" stroke={color} strokeWidth={1.5} strokeDasharray={t.direction === "OUT" ? "4,2" : undefined}
             />
 
             {/* Wire: terminal block → PLC */}
             <polyline
-              points={}
+              points={`${wireToX},${wireToY} ${plcX},${plcY}`}
               fill="none" stroke={color} strokeWidth={1.5} opacity={0.4}
             />
           </g>
@@ -148,7 +148,7 @@ export function WiringDiagram({ variables, width = 800 }: WiringDiagramProps) {
         { color: WIRE_COLORS.IN, label: "Input (IN)" },
         { color: WIRE_COLORS.OUT, label: "Output (OUT)" },
       ].map((item, i) => (
-        <g key={item.label} transform={}>
+        <g key={item.label} transform={`translate(${PAD}, ${totalHeight - 40 + i * 20})`}>
           <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={2} />
           <text x={28} y={10} style={{ ...textBase, fill: "#374151" }}>{item.label}</text>
         </g>

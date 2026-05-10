@@ -32,6 +32,7 @@ import 'reactflow/dist/style.css';
 
 import { ladderNodeTypes } from './nodes';
 import type { LadderNode, LadderEdge } from '../../models/ladder-elements';
+import { useSimulationStore } from '../../store';
 import { useIsMobile } from '../../hooks';
 
 import './LadderCanvas.css';
@@ -83,6 +84,23 @@ export function LadderCanvas({
   useEffect(() => {
     setEdges(initialEdges);
   }, [initialEdges, setEdges]);
+
+  // Color edges based on power flow state
+  const poweredEdgeIds = useSimulationStore((state) => state.poweredEdgeIds);
+  useEffect(() => {
+    const style = getComputedStyle(document.documentElement);
+    const successColor = style.getPropertyValue('--color-success').trim() || '#4ec9b0';
+    setEdges((prev) =>
+      prev.map((e) => ({
+        ...e,
+        style: {
+          ...e.style,
+          stroke: poweredEdgeIds.has(e.id) ? successColor : themeColors.edge,
+          strokeWidth: poweredEdgeIds.has(e.id) ? 3 : 2,
+        },
+      }))
+    );
+  }, [poweredEdgeIds, setEdges, themeColors.edge]);
 
   // Handle new connections
   const onConnect = useCallback(

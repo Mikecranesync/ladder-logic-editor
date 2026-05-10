@@ -28,10 +28,13 @@ import {
   runScanCycle,
   initializeVariables,
   createRuntimeState,
+  evaluatePowerFlow,
   type RuntimeState,
   type SimulationStoreInterface,
 } from '../../interpreter';
 import { transformSTToLadder, type TransformResult } from '../../transformer';
+import type { LadderIR } from '../../transformer/ladder-ir';
+import type { DiagramLayout } from '../../transformer/layout';
 import type { STAST } from '../../transformer/ast';
 import type { LadderNode, LadderEdge } from '../../models/ladder-elements';
 
@@ -101,6 +104,8 @@ export function MainLayout() {
   // Interpreter state refs
   const currentASTRef = useRef<STAST | null>(null);
   const runtimeStateRef = useRef<RuntimeState | null>(null);
+  const currentIRRef = useRef<LadderIR | null>(null);
+  const currentLayoutRef = useRef<DiagramLayout | null>(null);
 
   // Simulation loop
   useEffect(() => {
@@ -133,6 +138,14 @@ export function MainLayout() {
           // Get fresh store reference for each cycle
           const store = useSimulationStore.getState() as SimulationStoreInterface;
           runScanCycle(ast, store, runtimeState);
+
+          // Evaluate power flow after scan cycle
+          const ir = currentIRRef.current;
+          const layout = currentLayoutRef.current;
+          if (ir && layout) {
+            const { poweredNodeIds, poweredEdgeIds } = evaluatePowerFlow(ir, store, runtimeState, layout);
+            useSimulationStore.getState().setPowerFlow(poweredNodeIds, poweredEdgeIds);
+          }
         } else {
           // Fallback: just update timers manually if no AST
           Object.keys(timers).forEach((timerName) => {
@@ -178,6 +191,7 @@ export function MainLayout() {
   const handleStop = useCallback(() => {
     stopSimulation();
     resetSimulation();
+    useSimulationStore.getState().setPowerFlow(new Set(), new Set());
   }, [stopSimulation, resetSimulation]);
 
   // Auto-save when files change
@@ -235,6 +249,9 @@ export function MainLayout() {
           initializeVariables(newAST, store);
           runtimeStateRef.current = createRuntimeState(newAST);
         }
+        // Store IR and layout for power flow evaluator
+        if (result.intermediates?.ir) currentIRRef.current = result.intermediates.ir;
+        if (result.intermediates?.layout) currentLayoutRef.current = result.intermediates.layout;
       } else {
         setSyncStatus('error');
         setErrorCount(result.errors.length);

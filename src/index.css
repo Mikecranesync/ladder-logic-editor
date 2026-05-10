@@ -157,6 +157,12 @@
 }
 
 @media print {
+  /* Allow full document height to render all rungs */
+  html, body, .main-layout {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Hide editor chrome */
   header, nav, aside,
   .toolbar, .file-tabs,
@@ -209,6 +215,51 @@
     font-family: 'Courier New', monospace;
   }
   .print-rung-guide li { margin-bottom: 1.5pt; }
+
+  /* Variable reference table */
+  .print-variable-table {
+    page-break-inside: avoid;
+    margin-bottom: 16pt;
+  }
+  .print-variable-table h2 {
+    font-size: 11pt;
+    margin: 0 0 4pt;
+    border-bottom: 1.5pt solid #000;
+    padding-bottom: 3pt;
+  }
+  .print-var-note {
+    font-size: 8.5pt;
+    margin: 0 0 8pt;
+    color: #333;
+  }
+  .print-var-note code {
+    font-family: 'Courier New', monospace;
+    font-size: 8pt;
+  }
+  .print-var-section-label {
+    font-size: 8.5pt;
+    font-weight: bold;
+    margin: 6pt 0 3pt;
+    color: #444;
+  }
+  .print-var-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-bottom: 4pt;
+  }
+  .print-var-tbl th,
+  .print-var-tbl td {
+    border: 0.5pt solid #bbb;
+    padding: 2pt 6pt;
+    text-align: left;
+  }
+  .print-var-tbl thead tr {
+    background: #f0f0f0;
+  }
+  .print-var-tbl tbody tr:nth-child(even) {
+    background: #fafafa;
+  }
 
   @page {
     size: letter;
